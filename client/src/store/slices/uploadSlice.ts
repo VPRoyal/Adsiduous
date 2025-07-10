@@ -34,7 +34,7 @@ const uploadSlice = createSlice({
         state.uploadProgress = 100
         state.files.unshift(action.payload)
       })
-      .addCase(uploadFile.rejected, (state, action) => {
+      .addCase(uploadFile.rejected, (state, _action) => {
         state.isUploading = false
         state.uploadProgress = 0
       })

@@ -56,7 +56,7 @@ const searchSlice = createSlice({
 
         state.pagination = pagination;
       })
-      .addCase(searchFiles.rejected, (state, action) => {
+      .addCase(searchFiles.rejected, (state, _action) => {
         state.isLoading = false;
       })
       // Get suggestions

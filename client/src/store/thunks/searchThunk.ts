@@ -32,7 +32,7 @@ const getSuggestions = createAsyncThunk(
 
 const getTags = createAsyncThunk(
   SearchActions.TAGS,
-  async (query: string, { rejectWithValue }) => {
+  async (_query: string, { rejectWithValue }) => {
     try {
       const response: any = await SearchService.getTags();
       return response.data;
