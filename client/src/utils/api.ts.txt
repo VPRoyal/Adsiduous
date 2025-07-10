@@ -1,0 +1,100 @@
+import Cookies from "js-cookie"
+
+const API_BASE_URL = "/api"
+
+class ApiClient {
+  private getAuthHeaders(): HeadersInit {
+    const token = Cookies.get("auth_token")
+    return {
+      "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` }),
+    }
+  }
+
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${API_BASE_URL}${endpoint}`
+    const config: RequestInit = {
+      headers: this.getAuthHeaders(),
+      ...options,
+    }
+
+    try {
+      const response = await fetch(url, config)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error("API request failed:", error)
+      throw error
+    }
+  }
+
+  // Auth endpoints
+  async login(credentials: { email: string; password: string }) {
+    return this.request("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(credentials),
+    })
+  }
+
+  async register(userData: { name: string; email: string; password: string }) {
+    return this.request("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(userData),
+    })
+  }
+
+  async getMe() {
+    return this.request("/auth/me")
+  }
+
+  // Upload endpoints
+  async uploadFile(file: File, tags: string[] = []) {
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("tags", JSON.stringify(tags))
+
+    const token = Cookies.get("auth_token")
+    return fetch(`${API_BASE_URL}/upload`, {
+      method: "POST",
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: formData,
+    }).then((response) => {
+      if (!response.ok) {
+        throw new Error("Upload failed")
+      }
+      return response.json()
+    })
+  }
+
+  // Search endpoints
+  async searchFiles(params: {
+    query?: string
+    tags?: string[]
+    type?: string
+    page?: number
+    limit?: number
+  }) {
+    const searchParams = new URLSearchParams()
+
+    if (params.query) searchParams.append("query", params.query)
+    if (params.tags?.length) searchParams.append("tags", params.tags.join(","))
+    if (params.type) searchParams.append("type", params.type)
+    if (params.page) searchParams.append("page", params.page.toString())
+    if (params.limit) searchParams.append("limit", params.limit.toString())
+
+    return this.request(`/search?${searchParams.toString()}`)
+  }
+
+  async getSuggestions(query: string) {
+    return this.request(`/search/suggestions?query=${encodeURIComponent(query)}`)
+  }
+}
+
+export const apiClient = new ApiClient()
